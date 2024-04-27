@@ -2,6 +2,9 @@ import requests
 import argparse
 from bs4 import BeautifulSoup
 
+def has_class_but_no_id(tag):
+    return tag.has_attr('class') and not tag.has_attr('id')
+
 def extract_open_graph(url):
     # Fetch the webpage content
     response = requests.get(url)
@@ -10,17 +13,21 @@ def extract_open_graph(url):
     # Parse the HTML content using BeautifulSoup
     soup = BeautifulSoup(html_content, 'html.parser')
 
+    # TODO: Is there other possible pattern to extract meta data from the HTML content
     # Find all meta tags with property starting with 'og:'
     og_tags = soup.find_all('meta', property=lambda x: x and x.startswith('og:'))
-
+    
     # Extract Open Graph parameters
-    open_graph_params = {}
+    meta_params = {}
+    meta_params['title'] = soup.title.string.strip() if soup.title else "No Title Found"
     for tag in og_tags:
-        property_name = tag['property'][3:]  # Remove 'og:' prefix
-        content = tag.get('content', '')
-        open_graph_params[property_name] = content
+        print (tag)
+        tag_name = tag.get('name', tag.get('property', ''))
+        tag_content = tag.get('content', '')
+        # print(f"{tag_name}: {tag_content}")
+        meta_params[tag_name] = tag_content
 
-    return open_graph_params
+    return meta_params
 
 if __name__ == '__main__':
     # Parse command-line arguments
@@ -29,12 +36,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     url = args.url
-    img_style = 'max-width: 100%; max-height: 100px; float: right; clear: right; margin-left: 1rem;margin-bottom: 2px;margin-top: 2px;'
     open_graph_params = extract_open_graph(url)
     for key, value in open_graph_params.items():
         print(f'{key}: {value}')
 
+    img_style = 'max-width: 100%; max-height: 100px; float: right; clear: right; margin-left: 1rem;margin-bottom: 2px;margin-top: 2px;'
+    img_url = open_graph_params.get("image", open_graph_params.get("og:image"))
+    img_text = f'<img src="{img_url}" alt="Image" style="{img_style}"/>' if img_url else ''
 
-
-    print(f'> [!cite] [{open_graph_params.get("title", "")}]({url})')
-    print(f'> <img src="{open_graph_params.get("image", "")}" alt="Image" style="{img_style}"/> {open_graph_params.get("description", "")}')
+    print('============= Copy From Here =============')
+    print(f'> [!cite] [{open_graph_params.get("title", "Title Not Found")}]({url})')
+    print(f'> {img_text} {open_graph_params.get("og:description", "No Description")}')
