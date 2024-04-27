@@ -2,9 +2,6 @@ import requests
 import argparse
 from bs4 import BeautifulSoup
 
-def has_class_but_no_id(tag):
-    return tag.has_attr('class') and not tag.has_attr('id')
-
 def extract_open_graph(url):
     # Fetch the webpage content
     response = requests.get(url)
